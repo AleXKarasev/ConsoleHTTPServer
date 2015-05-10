@@ -65,23 +65,16 @@ namespace Server
         private String ReadClientRequest(TcpClient newClient)
         {
             String result = String.Empty;
-            String finishChar = "\r\n\r\n";
-            // читаем по килобайту
-            byte[] Buffer = new byte[1024];
-            int Count;
-            // Читаем из потока клиента до тех пор, пока от него поступают данные
-            while ((Count = newClient.GetStream().Read(Buffer, 0, Buffer.Length)) > 0)
-            {
-                // Преобразуем эти данные в строку и добавим ее к переменной Request
-                result += Encoding.ASCII.GetString(Buffer, 0, Count);
-                if (result.IndexOf(finishChar, StringComparison.Ordinal) >= 0)
-                {
-                    // обрезаем строку и выходим
-                    result = result.Substring(0, result.IndexOf(finishChar, StringComparison.Ordinal));
-                    break;
-                }
-            }
 
+            var myNetworkStream = newClient.GetStream();
+            var buffer = new byte[1024];
+            do
+            {
+                int bytesRead = myNetworkStream.Read(buffer, 0, buffer.Length);
+                result += Encoding.ASCII.GetString(buffer, 0, bytesRead);
+            }
+            while (myNetworkStream.DataAvailable);
+            
             return result;
         }
 
