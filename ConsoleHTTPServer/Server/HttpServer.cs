@@ -72,6 +72,19 @@ namespace Server
             else if (parser.Route == "/Proxy/")
             {
                 // todo нужно загрузить данные из переданного url и вернуть их в ответе
+                if (parser.Data.ContainsKey("url"))
+                {
+                    // загрузим страницу 
+                    var url = parser.Data["url"];
+                    var htmlString = String.Empty;
+                    using (var client = new WebClient())
+                    {
+                        htmlString = client.DownloadString(url);
+                    }
+
+                    // отправим ее пользователю
+                    ReturnString(newClient, result);
+                }
             }
             else
             {
@@ -82,16 +95,30 @@ namespace Server
             newClient.Close();
         }
 
-        private void ReturnHTMLHelloWorld(TcpClient newClient)
+        /// <summary>
+        ///     Возвращает произвольный html
+        /// </summary>
+        /// <param name="newClient"></param>
+        /// <param name="html"></param>
+        private void ReturnString(TcpClient newClient, String html)
         {
-            // сожержимое страницы
-            const string html = "<html><body><h1>Hello world!</h1></body></html>";
             // + заголовок
             string str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + html.Length.ToString() + "\n\n" + html;
             // Приведем строку к виду массива байт
             byte[] buffer = Encoding.ASCII.GetBytes(str);
-            
+
             newClient.GetStream().Write(buffer, 0, buffer.Length);
+        }
+
+        /// <summary>
+        ///     Возвращает hello world в браузер
+        /// </summary>
+        /// <param name="newClient"></param>
+        private void ReturnHTMLHelloWorld(TcpClient newClient)
+        {
+            // сожержимое страницы
+            const string html = "<html><body><h1>Hello world!</h1></body></html>";
+            ReturnString(newClient, html);
         }
 
         /// <summary>
