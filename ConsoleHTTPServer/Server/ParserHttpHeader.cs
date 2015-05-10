@@ -25,7 +25,7 @@ namespace Server
         /// <summary>
         ///     Данные сообщения
         /// </summary>
-        private readonly Dictionary<String, String> _data;
+        private Dictionary<String, String> _data;
 
         public ParserHttpHeader(String request)
         {
@@ -52,10 +52,19 @@ namespace Server
                 else
                 {
                     // дошли до данных post запроса
-                    var nvc = HttpUtility.ParseQueryString(line);
-                    _data = nvc.AllKeys.ToDictionary(k => k, k => nvc[k]);
+                    ParseQueryString(line);
                 }
             }
+        }
+
+        /// <summary>
+        ///     Парсит строку параметров
+        /// </summary>
+        /// <param name="data"></param>
+        private void ParseQueryString(String data)
+        {
+            var nvc = HttpUtility.ParseQueryString(data);
+            _data = nvc.AllKeys.ToDictionary(k => k, k => nvc[k]);
         }
 
         /// <summary>
@@ -98,7 +107,16 @@ namespace Server
         {
             var array = firstLine.Split(' ');
             _requestType = array[0].ToUpper().Trim().Equals("GET") ? RequestType.Get : RequestType.Post;
-            _route = array[1];
+            if (_requestType == RequestType.Get && array[1].Contains("?"))
+            {
+                var poz = array[1].IndexOf("?", StringComparison.Ordinal);
+                _route = array[1].Substring(0, poz).Trim();
+                ParseQueryString(array[1].Substring(poz + 1, array[1].Length - poz - 1).Trim());
+            }
+            else
+            {
+                _route = array[1];
+            }
         }
     }
 
