@@ -76,14 +76,15 @@ namespace Server
                 {
                     // загрузим страницу 
                     var url = parser.Data["url"];
-                    var htmlString = String.Empty;
-                    using (var client = new WebClient())
+                    string htmlString;
+                    using (var webClient = new WebClient())
                     {
-                        htmlString = client.DownloadString(url);
+                        //webClient.UseDefaultCredentials = true;
+                        //webClient.Proxy = WebRequest.GetSystemWebProxy();
+                        htmlString = webClient.DownloadString(url);
                     }
-
                     // отправим ее пользователю
-                    ReturnString(newClient, result);
+                    ReturnString(newClient, htmlString);
                 }
             }
             else
