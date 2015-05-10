@@ -47,6 +47,9 @@
     <Compile Include="ParserHttpHeader.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Storage\IStorage.cs" />
+    <Compile Include="Storage\StorageSqlLight.cs" />
+    <Compile Include="Storage\StorageXml.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
