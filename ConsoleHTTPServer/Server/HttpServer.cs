@@ -11,47 +11,60 @@ namespace Server
     public class HttpServer : IDisposable
     {
         private readonly TcpListener _listener;
+        private readonly CancellationTokenSource _cancellationTokenSource;
 
         public HttpServer(Int32 port)
         {
             _listener = new TcpListener(IPAddress.Any, port);
+            _cancellationTokenSource = new CancellationTokenSource();
         }
 
         public void Start()
         {
-            Task.Factory.StartNew(() =>
-            {
-                _listener.Start();
-                ServerMainThread();
-            });
+            Task.Factory.StartNew(ServerMainThread);
         }
 
         private void ServerMainThread()
         {
-            _listener.BeginAcceptTcpClient(RequestProcess, _listener);
+            _listener.Start();
+            AcceptClientsAsync(_listener, _cancellationTokenSource.Token);
         }
 
-        private void RequestProcess(IAsyncResult res)
+        async Task AcceptClientsAsync(TcpListener listener, CancellationToken ct)
         {
-            ServerMainThread();
-            TcpClient client = _listener.EndAcceptTcpClient(res);
+            while (!ct.IsCancellationRequested)
+            {
+                var client = await listener.AcceptTcpClientAsync();
+                EchoAsync(client, ct);
+            }
+        }
 
-            // Код простой HTML-странички
-            string Html = "<html><body><h1>Hello world!</h1></body></html>";
-            // Необходимые заголовки: ответ сервера, тип и длина содержимого. После двух пустых строк - само содержимое
-            string Str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + "\n\n" + Html;
-            // Приведем строку к виду массива байт
-            byte[] Buffer = Encoding.ASCII.GetBytes(Str);
-            // Отправим его клиенту
-            client.GetStream().Write(Buffer, 0, Buffer.Length);
-            // Закроем соединение
-            client.Close();
+        async Task EchoAsync(TcpClient client, CancellationToken ct)
+        {
+            Console.WriteLine("New client connected");
+            using (client)
+            {
+                var stream = client.GetStream();
+                while (!ct.IsCancellationRequested)
+                {
+                    // сожержимое страницы
+                    const string html = "<html><body><h1>Hello world!</h1></body></html>";
+                    // + заголовок
+                    string str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + html.Length.ToString() + "\n\n" + html;
+                    // Приведем строку к виду массива байт
+                    byte[] buffer = Encoding.ASCII.GetBytes(str);
+
+                    //await stream.WriteAsync(buffer, 0, buffer.Length, ct);
+                    stream.Write(buffer, 0, buffer.Length);
+                }
+            }
+            Console.WriteLine("Client disconnected");
         }
 
         public void Dispose()
         {
             // останавливаем основной поток сервера
-            //_canceller.Cancel();
+            _cancellationTokenSource.Cancel();
             _listener.Stop();
         }
     }
