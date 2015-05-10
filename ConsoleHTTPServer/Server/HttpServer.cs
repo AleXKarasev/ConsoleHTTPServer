@@ -11,6 +11,7 @@ namespace Server
     public class HttpServer : IDisposable
     {
         private readonly TcpListener _listener;
+        private readonly CancellationTokenSource _cancellationTokenSource;
 
         public HttpServer(Int32 port)
         {
@@ -20,7 +21,7 @@ namespace Server
 
         public void Start()
         {
-            Task.Factory.StartNew(ServerMainThread);
+            Task.Factory.StartNew(ServerMainThread, _cancellationTokenSource.Token);
         }
 
         private void ServerMainThread()
@@ -31,6 +32,8 @@ namespace Server
             {
                 var newClient = _listener.AcceptTcpClient();
                 Task.Factory.StartNew(() => RequestProcess(newClient));
+
+                _cancellationTokenSource.Token.ThrowIfCancellationRequested();
             }
         }
 
@@ -85,7 +88,7 @@ namespace Server
         public void Dispose()
         {
             // останавливаем основной поток сервера
-            _listener.Stop();
+            _cancellationTokenSource.Cancel();
         }
     }
 }
