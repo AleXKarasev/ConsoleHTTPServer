@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ninject;
 using Server.Storage;
 
 namespace Server
@@ -19,7 +20,8 @@ namespace Server
         {
             _listener = new TcpListener(IPAddress.Any, port);
             _cancellationTokenSource = new CancellationTokenSource();
-            _storage = new StorageXml("c:\\temp.xml");
+            // получаем сторадж через Ninject
+            _storage = Program.GetKernel().Get<IStorage>();
         }
 
         public void Start()
