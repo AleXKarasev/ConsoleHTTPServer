@@ -19,39 +19,71 @@ namespace Server
 
         public void Start()
         {
-            Task.Factory.StartNew(() =>
-            {
-                _listener.Start();
-                ServerMainThread();
-            });
+            Task.Factory.StartNew(ServerMainThread);
         }
 
         private void ServerMainThread()
         {
-            _listener.BeginAcceptTcpClient(RequestProcess, _listener);
+            _listener.Start();
+
+            while (true)
+            {
+                var newClient = _listener.AcceptTcpClient();
+                Task.Factory.StartNew(() => RequestProcess(newClient));
+            }
         }
 
-        private void RequestProcess(IAsyncResult res)
+        private void RequestProcess(TcpClient newClient)
         {
-            ServerMainThread();
-            TcpClient client = _listener.EndAcceptTcpClient(res);
+            var clientRequest = ReadClientRequest(newClient);
 
-            // Код простой HTML-странички
-            string Html = "<html><body><h1>Hello world!</h1></body></html>";
-            // Необходимые заголовки: ответ сервера, тип и длина содержимого. После двух пустых строк - само содержимое
-            string Str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + Html.Length.ToString() + "\n\n" + Html;
+            Console.WriteLine("%%%%%%%%%%%%%%%% Новый запрос %%%%%%%%%%%%%%%%");
+            Console.WriteLine(clientRequest);
+            Console.WriteLine("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+
+            ReturnHTMLHelloWorld(newClient);
+
+            newClient.Close();
+        }
+
+        private void ReturnHTMLHelloWorld(TcpClient newClient)
+        {
+            // сожержимое страницы
+            const string html = "<html><body><h1>Hello world!</h1></body></html>";
+            // + заголовок
+            string str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + html.Length.ToString() + "\n\n" + html;
             // Приведем строку к виду массива байт
-            byte[] Buffer = Encoding.ASCII.GetBytes(Str);
-            // Отправим его клиенту
-            client.GetStream().Write(Buffer, 0, Buffer.Length);
-            // Закроем соединение
-            client.Close();
+            byte[] buffer = Encoding.ASCII.GetBytes(str);
+            
+            newClient.GetStream().Write(buffer, 0, buffer.Length);
+        }
+
+        private String ReadClientRequest(TcpClient newClient)
+        {
+            String result = String.Empty;
+            String finishChar = "\r\n\r\n";
+            // читаем по килобайту
+            byte[] Buffer = new byte[1024];
+            int Count;
+            // Читаем из потока клиента до тех пор, пока от него поступают данные
+            while ((Count = newClient.GetStream().Read(Buffer, 0, Buffer.Length)) > 0)
+            {
+                // Преобразуем эти данные в строку и добавим ее к переменной Request
+                result += Encoding.ASCII.GetString(Buffer, 0, Count);
+                if (result.IndexOf(finishChar, StringComparison.Ordinal) >= 0)
+                {
+                    // обрезаем строку и выходим
+                    result = result.Substring(0, result.IndexOf(finishChar, StringComparison.Ordinal));
+                    break;
+                }
+            }
+
+            return result;
         }
 
         public void Dispose()
         {
             // останавливаем основной поток сервера
-            //_canceller.Cancel();
             _listener.Stop();
         }
     }
