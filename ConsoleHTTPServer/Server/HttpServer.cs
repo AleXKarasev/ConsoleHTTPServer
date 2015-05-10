@@ -11,7 +11,6 @@ namespace Server
     public class HttpServer : IDisposable
     {
         private readonly TcpListener _listener;
-        private readonly CancellationTokenSource _cancellationTokenSource;
 
         public HttpServer(Int32 port)
         {
@@ -27,44 +26,65 @@ namespace Server
         private void ServerMainThread()
         {
             _listener.Start();
-            AcceptClientsAsync(_listener, _cancellationTokenSource.Token);
-        }
 
-        async Task AcceptClientsAsync(TcpListener listener, CancellationToken ct)
-        {
-            while (!ct.IsCancellationRequested)
+            while (true)
             {
-                var client = await listener.AcceptTcpClientAsync();
-                EchoAsync(client, ct);
+                var newClient = _listener.AcceptTcpClient();
+                Task.Factory.StartNew(() => RequestProcess(newClient));
             }
         }
 
-        async Task EchoAsync(TcpClient client, CancellationToken ct)
+        private void RequestProcess(TcpClient newClient)
         {
-            Console.WriteLine("New client connected");
-            using (client)
-            {
-                var stream = client.GetStream();
-                while (!ct.IsCancellationRequested)
-                {
-                    // сожержимое страницы
-                    const string html = "<html><body><h1>Hello world!</h1></body></html>";
-                    // + заголовок
-                    string str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + html.Length.ToString() + "\n\n" + html;
-                    // Приведем строку к виду массива байт
-                    byte[] buffer = Encoding.ASCII.GetBytes(str);
+            var clientRequest = ReadClientRequest(newClient);
 
-                    //await stream.WriteAsync(buffer, 0, buffer.Length, ct);
-                    stream.Write(buffer, 0, buffer.Length);
+            Console.WriteLine("%%%%%%%%%%%%%%%% Новый запрос %%%%%%%%%%%%%%%%");
+            Console.WriteLine(clientRequest);
+            Console.WriteLine("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+
+            ReturnHTMLHelloWorld(newClient);
+
+            newClient.Close();
+        }
+
+        private void ReturnHTMLHelloWorld(TcpClient newClient)
+        {
+            // сожержимое страницы
+            const string html = "<html><body><h1>Hello world!</h1></body></html>";
+            // + заголовок
+            string str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + html.Length.ToString() + "\n\n" + html;
+            // Приведем строку к виду массива байт
+            byte[] buffer = Encoding.ASCII.GetBytes(str);
+            
+            newClient.GetStream().Write(buffer, 0, buffer.Length);
+        }
+
+        private String ReadClientRequest(TcpClient newClient)
+        {
+            String result = String.Empty;
+            String finishChar = "\r\n\r\n";
+            // читаем по килобайту
+            byte[] Buffer = new byte[1024];
+            int Count;
+            // Читаем из потока клиента до тех пор, пока от него поступают данные
+            while ((Count = newClient.GetStream().Read(Buffer, 0, Buffer.Length)) > 0)
+            {
+                // Преобразуем эти данные в строку и добавим ее к переменной Request
+                result += Encoding.ASCII.GetString(Buffer, 0, Count);
+                if (result.IndexOf(finishChar, StringComparison.Ordinal) >= 0)
+                {
+                    // обрезаем строку и выходим
+                    result = result.Substring(0, result.IndexOf(finishChar, StringComparison.Ordinal));
+                    break;
                 }
             }
-            Console.WriteLine("Client disconnected");
+
+            return result;
         }
 
         public void Dispose()
         {
             // останавливаем основной поток сервера
-            _cancellationTokenSource.Cancel();
             _listener.Stop();
         }
     }
