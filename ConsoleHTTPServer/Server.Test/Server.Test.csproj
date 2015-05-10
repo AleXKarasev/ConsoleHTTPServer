@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="ParserHttpHeaderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StorageXmlTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Server\Server.csproj">

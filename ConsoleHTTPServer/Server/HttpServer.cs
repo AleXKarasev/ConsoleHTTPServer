@@ -19,7 +19,7 @@ namespace Server
         {
             _listener = new TcpListener(IPAddress.Any, port);
             _cancellationTokenSource = new CancellationTokenSource();
-            _storage = new StorageXml();
+            _storage = new StorageXml("c:\\temp.xml");
         }
 
         public void Start()
@@ -66,6 +66,10 @@ namespace Server
                         _storage.AddMessage(parser.Data["user"], parser.Data["message"]);
                     }
                 }
+            }
+            else if (parser.Route == "/Proxy/")
+            {
+                // todo нужно загрузить данные из переданного url и вернуть их в ответе
             }
             else
             {
