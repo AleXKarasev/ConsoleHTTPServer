@@ -106,7 +106,7 @@ namespace Server
             // + заголовок
             string str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + html.Length.ToString() + "\n\n" + html;
             // Приведем строку к виду массива байт
-            byte[] buffer = Encoding.ASCII.GetBytes(str);
+            byte[] buffer = Encoding.UTF8.GetBytes(str);
 
             newClient.GetStream().Write(buffer, 0, buffer.Length);
         }
@@ -141,12 +141,8 @@ namespace Server
 
             htmp.AppendLine("   </body>");
             htmp.AppendLine("</html>");
-            // + заголовок
-            string str = "HTTP/1.1 200 OK\nContent-type: text/html\nContent-Length:" + htmp.Length.ToString() + "\n\n" + htmp.ToString();
-            // Приведем строку к виду массива байт
-            byte[] buffer = Encoding.ASCII.GetBytes(str);
 
-            newClient.GetStream().Write(buffer, 0, buffer.Length);
+            ReturnString(newClient, htmp.ToString());
         }
 
         private String ReadClientRequest(TcpClient newClient)
