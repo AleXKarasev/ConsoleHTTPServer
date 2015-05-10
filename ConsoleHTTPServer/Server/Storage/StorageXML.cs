@@ -39,11 +39,14 @@ namespace Server.Storage
         public IDictionary<String, String> GetAll()
         {
             var result = new Dictionary<String, String>();
-            XmlDocument doc = new XmlDocument();
-            doc.Load(_filePath);
-            foreach (XmlNode node in doc.DocumentElement.ChildNodes)
+            if (File.Exists(_filePath))
             {
-                result.Add(node.Name, node.InnerText);
+                XmlDocument doc = new XmlDocument();
+                doc.Load(_filePath);
+                foreach (XmlNode node in doc.DocumentElement.ChildNodes)
+                {
+                    result.Add(node.Name, node.InnerText);
+                }
             }
             return result;
         }

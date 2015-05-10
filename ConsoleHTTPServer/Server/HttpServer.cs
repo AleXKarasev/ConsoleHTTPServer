@@ -57,7 +57,7 @@ namespace Server
                     // возвращаем все записи из гостевой книги
                     ReturnAllMessage(newClient, _storage.GetAll());
                 }
-                else if (parser.RequestType == RequestType.Get)
+                else if (parser.RequestType == RequestType.Post)
                 {
                     // если есть user и message то пишем их или в БД или в XML
                     if (parser.Data.ContainsKey("user") && parser.Data.ContainsKey("message"))
