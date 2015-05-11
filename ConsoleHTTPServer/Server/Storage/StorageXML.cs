@@ -12,20 +12,21 @@ namespace Server.Storage
         public StorageXml(String filePath)
         {
             _filePath = filePath;
+
+            if (!File.Exists(_filePath))
+            {
+                XmlDocument doc = new XmlDocument();
+                var root = doc.CreateElement("mesages");
+                doc.AppendChild(root);
+                doc.Save(_filePath);
+            }
         }
 
         public void AddMessage(string user, string message)
         {
+            // todo можно добавить блокировку на создаение/дозаписть в файл если предпологать что будет многопоточное обращение
             XmlDocument doc = new XmlDocument();
-            if (File.Exists(_filePath))
-            {
-                doc.Load(_filePath);
-            }
-            else
-            {
-                var root = doc.CreateElement("mesages");
-                doc.AppendChild(root);
-            }
+            doc.Load(_filePath);
 
             XmlElement newMessage = doc.CreateElement(user);
             newMessage.InnerText = message;

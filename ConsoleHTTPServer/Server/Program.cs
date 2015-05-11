@@ -58,17 +58,20 @@ namespace Server
         /// <param name="kernel">Ядро Ninject.</param>
         private static void RegisterServices(IKernel kernel)
         {
-            // todo в зафисисмости от конфига биндим нужный сторажд
-            if (true)
+            string dataFilePath = ConfigurationManager.AppSettings["dataFilePath"] ?? "c:\\temp.xml";
+            Boolean isXml = ConfigurationManager.AppSettings["storeType"] == "xml";
+            // в зависимости от конфига биндим нужный сторадж
+            if (isXml)
             {
-                string xmlFilePath = ConfigurationManager.AppSettings["xmlFilePath"] ?? "c:\\temp.xml";
-                var xmlStorage = new StorageXml(xmlFilePath);
-                kernel.Bind<IStorage>().ToConstant(xmlStorage).InSingletonScope();
+                kernel.Bind<IStorage>()
+                    .ToConstant(new StorageXml(dataFilePath))
+                    .InSingletonScope();
             }
             else
             {
-                var sqlStorage = new StorageSqlLight();
-                kernel.Bind<IStorage>().ToConstant(sqlStorage).InSingletonScope();
+                kernel.Bind<IStorage>()
+                    .ToConstant(new StorageSQLight(dataFilePath))
+                    .InSingletonScope();
             }
         }
     }
