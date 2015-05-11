@@ -61,7 +61,8 @@ namespace Server
             // todo в зафисисмости от конфига биндим нужный сторажд
             if (true)
             {
-                var xmlStorage = new StorageXml("c:\\temp.xml");
+                string xmlFilePath = ConfigurationManager.AppSettings["xmlFilePath"] ?? "c:\\temp.xml";
+                var xmlStorage = new StorageXml(xmlFilePath);
                 kernel.Bind<IStorage>().ToConstant(xmlStorage).InSingletonScope();
             }
             else
